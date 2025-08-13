@@ -1,7 +1,8 @@
 
-# Multi-Agent RAG with a Cybersecurity Knowledge Graph (Without Log)
+# AgCyRAG: an Agentic Knowledge Graph based RAG Framework for Automated Security Analysis
 
-A Multi-agent system designed to answer questions about cybersecurity and the MITRE ATT&CK framework. The system incorporates several search and reasoning techniques, such as vector search, Cypher query to Neo4j, and integration with MCP RDF agent for graph and RDF-based data exploration.
+AgCyRAG is a hybrid Agentic Retrieval-Augmented Generation (RAG) framework designed to improve cybersecurity analysis by integrating Knowledge Graph (KG) reasoning with vector-based retrieval.
+It enables factual grounding of Large Language Model (LLM)-powered analyses while handling heterogeneous structured and unstructured data (e.g., security log sources)
 ## Core Components
 
 - Multi-Agent System (LangGraph): The primary application logic that orchestrates the entire workflow. It includes specialized agents for validating questions, querying databases, reflecting on results, and synthesizing final answers
