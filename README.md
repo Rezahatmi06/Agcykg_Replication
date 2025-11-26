@@ -7,7 +7,7 @@ It enables factual grounding of Large Language Model (LLM)-powered analyses whil
 
 - Multi-Agent System (LangGraph): The primary application logic that orchestrates the entire workflow. It includes specialized agents for validating questions, querying databases, reflecting on results, and synthesizing final answers
 - Neo4j Knowledge Graph: A graph database storing structured cybersecurity data (e.g., from the MITRE ATT&CK framework), which is queried using the Cypher language.
-- MCP RDF Explorer: Model Context Protocol (MCP) server that provides a conversational interface for RDF-based Knowledge Graph (Turtle) exploration and analysis in local file mode or SPARQL endpoint mode. (https://github.com/emekaokoye/mcp-rdf-explorer)
+- MCP RDF Explorer: Model Context Protocol (MCP) server that provides a conversational interface for RDF-based Knowledge Graph (Turtle) exploration and analysis in local file mode or SPARQL endpoint mode. (https://github.com/sepses/multi-agents-cykg-rag/tree/main/mcp-cskg-rdf)
 
 ## Setup and Installation
 
