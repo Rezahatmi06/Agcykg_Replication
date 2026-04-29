@@ -1,7 +1,7 @@
 # src/agents/cypher_agent.py
 from langchain_core.prompts import PromptTemplate
-from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
-from langchain_openai import ChatOpenAI
+from langchain.chains import GraphCypherQAChain
+from src.config.settings import graph, llm
 from src.config.settings import graph
 
 # --- Cypher Generation Prompt Template ---
@@ -97,8 +97,8 @@ cypher_qa_chain = GraphCypherQAChain.from_llm(
     return_intermediate_steps=True,
     cypher_prompt=cyper_generation_prompt,
     qa_prompt=qa_generation_prompt,
-    qa_llm=ChatOpenAI(model="gpt-3.5-turbo", temperature=0),
-    cypher_llm=ChatOpenAI(model="gpt-4o", temperature=0),
+    qa_llm=llm,        
+    cypher_llm=llm,
     allow_dangerous_requests=True,
     use_function_response=True
 )

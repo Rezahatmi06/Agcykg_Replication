@@ -1,57 +1,120 @@
-# src/agents/mcp_rdf_agent.py
-import os
+"""MCP RDF agent wrapper.
+
+Spawns the real MCP agent in a dedicated subprocess so that it runs with
+a fresh Python/asyncio state. This avoids the known
+``cannot pickle '_asyncio.Future' object`` error that occurs when
+``mcp_use.MCPAgent`` is run inside an already-active event loop (such as
+LangGraph's), because LangChain's callback/verbose plumbing walks the
+agent state which contains gRPC Futures from ``langchain-google-genai``.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
 import logging
+import os
+import sys
 from pathlib import Path
-from mcp_use import MCPAgent, MCPClient
-from src.config.settings import llm
 
 logger = logging.getLogger(__name__)
 
-# --- Konfigurasi dan Inisialisasi Agen MCP ---
+_RESULT_START = "__MCP_RESULT__"
+_RESULT_END = "__END__"
 
-_mcp_client = None
 
-def get_mcp_client():
-    """Inisialisasi dan mengembalikan MCPClient (hanya sekali)."""
-    global _mcp_client
-    if _mcp_client is None:
-        project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / "browser_mcp.json"
-        if not config_path.exists():
-            raise FileNotFoundError(f"MCP config file not found at {config_path}")
-        os.environ["MCP_USE_ANONYMIZED_TELEMETRY"] = "false"
-        _mcp_client = MCPClient.from_config_file(str(config_path))
-    return _mcp_client
+def _extract_payload(stdout_bytes: bytes) -> dict | None:
+    """Pull the JSON payload emitted by the runner from its stdout.
 
-strict_system_prompt = """
-You are a specialized cybersecurity assistant. You MUST answer questions ONLY by using the provided tools. Your only source of information is the knowledge graph accessed via tools.
-
-Your thought process MUST be:
-    1.  **Analyze the user's question** to understand the core intent.
-    2.  **Select the best tool.**.
-    3.  **Execute the tool.**  If that fails or the question is complex, use `text_to_sparql` to convert the question into a precise SPARQL query.
-    4.  **Analyze the result.**
-        - If the result is a **validation error** (like a Pydantic error), it means you provided the wrong arguments to the tool. Read the error message carefully. DO NOT use the same tool with the exact same arguments again. Correct the arguments and retry. For tools requiring `ctx`, DO NOT provide a value for it; the system handles it.
-        - If the result is **empty or "not found"**, the information may not exist, or your query was too narrow. Try rephrasing your input for the tool, perhaps using a broader term.
-        - If you are stuck in a loop of failures, only then you must state that you could not find the information.
-    5.  **NEVER provide an answer from memory.** All answers must be based on tool results.
-"""
-
-async def run_mcp_agent(question: str) -> str:
-    """
-    Runs the MCPAgent with the given question and returns the result.
+    The runner wraps its result between ``__MCP_RESULT__`` / ``__END__`` markers
+    so we can safely locate it even if other things were printed to stdout.
     """
     try:
-        client = get_mcp_client()
-        agent = MCPAgent(
-            llm=llm,
-            client=client,
-            max_steps=30,
-            verbose=True,
-            system_prompt=strict_system_prompt
+        text = stdout_bytes.decode("utf-8", errors="replace")
+    except Exception:
+        return None
+
+    start = text.rfind(_RESULT_START)
+    if start == -1:
+        return None
+    start += len(_RESULT_START)
+    end = text.find(_RESULT_END, start)
+    if end == -1:
+        return None
+    try:
+        return json.loads(text[start:end])
+    except json.JSONDecodeError:
+        return None
+
+
+async def run_mcp_agent(question: str) -> str:
+    """Execute the MCP RDF agent in an isolated subprocess.
+
+    Returns the agent's final answer as a string, or an error message
+    prefixed with ``Error during MCP execution:`` on failure.
+    """
+    project_root = Path(__file__).resolve().parent.parent.parent
+    runner_path = project_root / "src" / "agents" / "_mcp_runner.py"
+
+    if not runner_path.exists():
+        return f"Error during MCP execution: runner script not found at {runner_path}"
+
+    env = os.environ.copy()
+    env["MCP_USE_ANONYMIZED_TELEMETRY"] = "false"
+    # LangSmith tracing is a common trigger of the deepcopy -> pickle path
+    # that explodes on asyncio.Future; keep it off for the child.
+    env["LANGCHAIN_TRACING_V2"] = "false"
+    # Make sure child's prints are flushed promptly and go out as UTF-8.
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-X",
+            "utf8",
+            str(runner_path),
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(project_root),
+            env=env,
         )
-        result = await agent.run(question)
-        return result
     except Exception as e:
-        logger.error(f"An error occurred while running the MCP Agent: {e}")
-        return f"Error during MCP agent execution: {e}"
+        logger.error(f"MCP Agent: failed to spawn subprocess: {e}")
+        return f"Error during MCP execution: failed to spawn subprocess: {e}"
+
+    try:
+        stdout, stderr = await proc.communicate(
+            json.dumps({"question": question}).encode("utf-8")
+        )
+    except Exception as e:
+        logger.error(f"MCP Agent: subprocess communication failed: {e}")
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        return f"Error during MCP execution: subprocess communication failed: {e}"
+
+    # Forward the child's stderr (verbose logs, tracebacks) so the user still
+    # sees what happened inside the agent run.
+    if stderr:
+        try:
+            sys.stderr.write(stderr.decode("utf-8", errors="replace"))
+            sys.stderr.flush()
+        except Exception:
+            pass
+
+    payload = _extract_payload(stdout)
+    if payload is None:
+        err = (stderr.decode("utf-8", errors="replace").strip()
+               if stderr else "no output from MCP subprocess")
+        logger.error(f"MCP Agent: could not parse subprocess output. stderr: {err}")
+        return f"Error during MCP execution: could not parse subprocess output"
+
+    if payload.get("ok"):
+        return str(payload.get("result", ""))
+
+    err_msg = payload.get("error", "unknown error")
+    logger.error(f"MCP Agent Error: {err_msg}")
+    return f"Error during MCP execution: {err_msg}"

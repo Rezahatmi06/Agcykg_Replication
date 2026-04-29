@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sepses-rdf": {
+      "command": "D:/Sistem/multi-agents-cykg-rag/.venv/Scripts/python.exe",
+      "args": [
+        "D:/Sistem/multi-agents-cykg-rag/mcp-cskg-rdf/src/mcp-cskg-rdf/server.py",
+        "--sparql-endpoint",
+        "https://w3id.org/sepses/sparql"
+      ]
+    }
+  }
+}

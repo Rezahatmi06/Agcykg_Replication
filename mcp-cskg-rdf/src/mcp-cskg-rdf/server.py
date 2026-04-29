@@ -43,7 +43,10 @@ except ImportError:
 parser = argparse.ArgumentParser(description="MITRE ATT&CK SPARQL MCP Server v1.0.0")
 parser.add_argument("--rdf-file", default="", help="Path to the local RDF file containing MITRE ATT&CK data")
 parser.add_argument("--sparql-endpoint", default="", help="SPARQL endpoint URL (empty for Local File Mode)")
-args = parser.parse_args()
+
+# PERBAIKAN DI SINI: Gunakan parse_known_args dan bersihkan sys.argv
+args, unknown = parser.parse_known_args()
+sys.argv = [sys.argv[0]] + unknown # Menyembunyikan argumen dari FastMCP agar tidak error
 
 logger.info("Starting MITRE ATT&CK SPARQL MCP Server v1.0.0")
 
@@ -81,7 +84,11 @@ async def attack_triplestore_lifespan(server: FastMCP, rdf_file: str, sparql_end
     if sparql_endpoint and HAS_SPARQLSTORE:
         logger.info(f"Connecting to SPARQL endpoint: {sparql_endpoint}")
         try:
-            graph = SPARQLStore(query_endpoint=sparql_endpoint)
+            #Paksa penggunaan format "json" untuk menghindari error XML Parser
+            store = SPARQLStore(query_endpoint=sparql_endpoint, returnFormat="json")
+            # Bungkus store ke dalam objek Graph standar
+            graph = rdflib.Graph(store=store)
+            
             # Test connection
             graph.query("SELECT ?s WHERE { ?s ?p ?o } LIMIT 1")
             logger.info(f"Successfully connected to {sparql_endpoint}")
@@ -1324,15 +1331,6 @@ def get_cves_by_year(year: int, ctx: Context, include_description: bool = False)
     
     return execute_sparql_query(query, ctx, include_description)
 
-# Run the server
-if __name__ == "__main__":
-    logger.info("Starting mcp.run()")
-    try:
-        mcp.run()
-    except Exception as e:
-        logger.error(f"Failed to start RDF Explorer: {str(e)}")
-        sys.exit(1)
-    logger.info("mcp.run() completed")
 
 @mcp.prompt()
 def text_to_sparql(prompt: str, ctx: Context) -> str:
@@ -1385,3 +1383,13 @@ def text_to_sparql(prompt: str, ctx: Context) -> str:
         if "interrupted" in str(e).lower():
             return f"Error: Response interrupted, likely due to token limit (Input: {input_tokens} tokens, Max: {max_tokens}). Shorten input or increase MAX_TOKENS."
         return f"Error executing query: {str(e)}"
+
+# Run the server
+if __name__ == "__main__":
+    logger.info("Starting mcp.run()")
+    try:
+        mcp.run(transport='stdio')
+    except Exception as e:
+        logger.error(f"Failed to start RDF Explorer: {str(e)}")
+        sys.exit(1)
+    logger.info("mcp.run() completed")

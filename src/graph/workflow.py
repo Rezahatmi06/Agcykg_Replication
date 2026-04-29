@@ -1,5 +1,6 @@
 # src/graph/workflow.py
 import logging
+import time 
 from langgraph.graph import StateGraph, END
 from src.graph.state import AgentState
 
@@ -59,6 +60,7 @@ def vector_search_node(state: AgentState):
 def review_vector_node(state: AgentState):
     """Reviews the context from the vector search."""
     logger.info("--- Executing Node: [[review_vector_answer]] ---")
+    time.sleep(60)
     question = state['original_question']
     context = state['log_vector_context']
     
@@ -124,6 +126,7 @@ def cypher_query_node(state: AgentState):
 def review_cypher_node(state: AgentState):
     """Reviews the context from the cypher search."""
     logger.info("--- Executing Node: [[review_cypher_answer]] ---")
+    time.sleep(30)
     question = state['original_question']
     context = str(state['log_cypher_context'])
     
@@ -162,6 +165,7 @@ def cypher_reflection_node(state: AgentState):
 def log_analysis_node(state: AgentState):
     """Analyzes log data and determine whether cybersecurity knowledge is required."""
     logger.info("--- Executing Node: [[Log Analysis Agent]] ---")
+    time.sleep(80)
     
     result = log_analysis_chain.invoke({
         "original_question": state['original_question'],
@@ -195,15 +199,16 @@ async def mcp_rdf_agent_node(state: dict) -> dict:
     try:
         mcp_context = await run_mcp_agent(question_to_ask)
         logger.info(f"[[MCP RDF Agent]]: Search completed. Context found:\n{mcp_context}")
-        return {"mcp_rdf_context": mcp_context}
+        return {"mcp_rdf_context": str(mcp_context)}
     except Exception as e:
         logger.error(f"[[MCP RDF Agent]]: Gagal menjalankan node: {e}")
-        return {"mcp_rdf_context": f"Error in MCP RDF Agent node: {e}"}
+        return {"mcp_rdf_context": f"Error in MCP RDF Agent node: {str(e)}"}
     
 # --- Node Definition: Synthesizer ---
 def synthesize_node(state: AgentState):
     """Generates the final compiled report for the user."""
     logger.info("--- Executing Node: [[Synthesizer]] ---")
+    time.sleep(20)
 
     # Ambil konteks, jika tidak ada atau kosong, gunakan pesan default
     log_cypher = str(state.get('log_cypher_context')) if state.get('log_cypher_context') else "Not applicable for this query."

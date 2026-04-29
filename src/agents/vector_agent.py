@@ -1,6 +1,6 @@
 # src/agents/vector_agent.py 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_neo4j.vectorstores.neo4j_vector import remove_lucene_chars
+from langchain_community.vectorstores.neo4j_vector import remove_lucene_chars
 from pydantic import BaseModel, Field
 from typing import List
 from src.config.settings import llm, graph, vector_index

@@ -6,8 +6,20 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
-.venv
+# Virtual environments & Tools
+.venv/
+.uv/
+uv.lock
+
+# Environment & Secrets (Sangat Penting!)
 .env
 *.env
-*.json
+
+# Data & Logs
+data/
+*.log
+auth.log
+
+# IDE settings
+.vscode/
+.idea/
