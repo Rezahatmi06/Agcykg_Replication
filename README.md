@@ -1,112 +1,85 @@
+AgCyRAG: Agentic Knowledge Graph based RAG for Automated Security Analysis
+AgCyRAG adalah framework Hybrid Agentic RAG yang dirancang untuk otomatisasi analisis keamanan siber. Sistem ini menggabungkan penalaran Knowledge Graph (Neo4j & RDF) dengan pencarian vektor untuk memberikan jawaban yang faktual dan terverifikasi berdasarkan data log internal serta basis pengetahuan eksternal (MITRE ATT&CK).
 
-# AgCyRAG: an Agentic Knowledge Graph based RAG Framework for Automated Security Analysis
+🚀 Fitur Utama
+Multi-Agent Orchestration: Menggunakan LangGraph untuk mengelola alur kerja agen (Guardrails, Vector, Cypher, RDF/SPARQL, dan Synthesis).
 
-AgCyRAG is a hybrid Agentic Retrieval-Augmented Generation (RAG) framework designed to improve cybersecurity analysis by integrating Knowledge Graph (KG) reasoning with vector-based retrieval.
-It enables factual grounding of Large Language Model (LLM)-powered analyses while handling heterogeneous structured and unstructured data (e.g., security log sources)
-## Core Components
+Hybrid Knowledge Retrieval:
 
-- Multi-Agent System (LangGraph): The primary application logic that orchestrates the entire workflow. It includes specialized agents for validating questions, querying databases, reflecting on results, and synthesizing final answers
-- Neo4j Knowledge Graph: A graph database storing structured cybersecurity data (e.g., from the MITRE ATT&CK framework), which is queried using the Cypher language.
-- MCP RDF Explorer: Model Context Protocol (MCP) server that provides a conversational interface for RDF-based Knowledge Graph (Turtle) exploration and analysis in local file mode or SPARQL endpoint mode. (https://github.com/sepses/multi-agents-cykg-rag/tree/main/mcp-cskg-rdf)
+Neo4j (LPG): Menyimpan data log privat/lokal (misal: aktivitas login user).
 
-## Setup and Installation
+RDF Store (SPARQL): Menghubungkan ke basis pengetahuan eksternal (MITRE ATT&CK via SEPSES).
 
-How to use
+Optimized for Gemini: Dikonfigurasi menggunakan model Google Gemini 1.5 Pro untuk analisis yang hemat biaya dan performa tinggi.
 
-Make sure that you already have uv installed on your desktop, if not then here's the installation guide : https://docs.astral.sh/uv/getting-started/installation/ 
+Safety Guardrails: Memastikan sistem hanya merespons pertanyaan yang relevan dengan domain cybersecurity.
 
-```bash
-  git clone <this-project>
-  cd <this-project>
-  uv sync
-```
-- make sure that you have cloned the MCP RDF Explorer repository, outside this multi-agents-cykg-rag repository/folder
-- add your .ttl (rdf schema) to $ ls mcp-rdf-explorer/src/mcp-rdf-explorer/
-- one level with the server.py code
-- setup the browser_mcp.json located in root of multi-agents-cykg-rag repository
-- which look like this (you can see more specific explanation of this step in MCP-RDF-Explorer repo [MCP RDF Explorer](https://github.com/emekaokoye/mcp-rdf-explorer)) :
-```json
-  {
-  "mcpServers": {
-    "rdf_explorer": {
-      "command": "D:\\Project\\github\\mcp-rdf-explorer\\venv\\Scripts\\python.exe",
-      "args": ["D:\\Project\\github\\mcp-rdf-explorer\\src\\mcp-rdf-explorer\\server.py", "--triple-file", "statements.ttl"]
-    }
-  }
-}
-```
+🛠️ Persiapan Sistem
+1. Prasyarat
+Sudah menginstal uv.
 
-Make sure again that the .env file is filled !!!
-```bash
-OPENAI_API_KEY=
-LANGCHAIN_API_KEY=
-LANGCHAIN_TRACING_V2=
-LANGCHAIN_ENDPOINT=
-LANGCHAIN_PROJECT=
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USERNAME=    
-NEO4J_PASSWORD_ICS=
-NEO4J_DATABASE=
+Memiliki akun Neo4j Aura (Free Tier).
 
-NEO4J_AURA=
-NEO4J_AURA_USERNAME=
-NEO4J_AURA_PASSWORD=
-NEO4J_AURA_DATABASE=
-```
+Memiliki Google AI API Key (Gemini).
 
-Setup is completed, now you can run the program!!!
-```bash
-  uv run -m src.run -- "Your question here"
-```
+2. Instalasi (Clean Install)
+Untuk menghindari error serialization (cannot pickle), pastikan kamu menginstal library dengan versi yang stabil:
 
+Bash
+# Clone repository
+git clone <url-repository-kamu>
+cd multi-agents-cykg-rag
 
-## Features
+# Buat lingkungan virtual
+uv venv
+source .venv/Scripts/activate  # Untuk Windows: .venv\Scripts\activate
 
-- **Multi-agent workflow**: Uses LangGraph to manage the workflow between agents (guardrails, vector search, cypher search, MCP RDF, reflection, and synthesizer).
+# Install library dengan versi yang dikunci (Krusial)
+uv pip install pydantic==1.10.12 langchain==0.1.20 langgraph==0.0.53 langchain-google-genai==1.0.3 langchain-neo4j==0.1.1 langchain-huggingface==0.0.3 python-dotenv
+3. Konfigurasi Environment (.env)
+Buat file .env di folder utama dan isi sebagai berikut:
 
-- **Guardrails**: Ensures the questions asked are relevant to the cybersecurity domain.
+Cuplikan kode
+GOOGLE_API_KEY=AIzaSy...
+NEO4J_AURA=neo4j+ssc://<instance-id>.databases.neo4j.io
+NEO4J_AURA_USERNAME=neo4j
+NEO4J_AURA_PASSWORD=<password-aura-kamu>
+NEO4J_AURA_DATABASE=neo4j
 
-- **Vector & Cypher Search**: Searches for answers from a vector and graph database (Neo4j) with automatic iteration and reflection if results are insufficient.
+# Konfigurasi LangChain (Opsional)
+LANGCHAIN_TRACING_V2=false
+LANGCHAIN_PROJECT=AgCyRAG-Research
+📊 Ingesti Data ke Neo4j
+Sebelum menjalankan aplikasi, kamu harus mengisi Neo4j Aura dengan data log:
 
-- **MCP RDF Agent**: Integrates RDF-based search to enrich the context of answers.
+Buka Neo4j LLM Graph Builder.
 
-- **Synthesizer**: Combines results from multiple sources into a comprehensive final answer.
+Hubungkan ke instance Aura kamu.
 
-- **Logging & Configuration**: Supports structured logging and configuration via .env files.
+Unggah file log (misal: daryl_auth.txt) dan klik Generate Graph.
 
+Pastikan data muncul di tab Explore pada konsol Aura.
 
-## Project Structure
+🖥️ Menjalankan Aplikasi
+Gunakan perintah berikut untuk mengajukan pertanyaan analisis:
 
-```bash
+Bash
+uv run -m src.run -- "Identifikasi aktivitas mencurigakan oleh user Daryl dan mitigasinya"
+❓ Troubleshooting (Penting!)
+Error AuthError: Unauthorized: Pastikan NEO4J_AURA_USERNAME adalah neo4j (bukan ID instance).
 
-no-log-multi-agents-cykg-rag/
+Error DatabaseNotFound: Jangan menentukan nama database secara manual di kode; biarkan driver memilih secara otomatis atau gunakan nama neo4j.
+
+Error cannot pickle: Pastikan kamu sudah melakukan downgrade Pydantic ke versi 1.10.12.
+
+Masalah Koneksi: Jika menggunakan jaringan kampus/kantor dan gagal konek, gunakan Hotspot Seluler dan gunakan protokol neo4j+ssc:// di file .env.
+
+📂 Struktur Proyek
+Plaintext
 ├── src/
-│   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── mcp_rdf_agent.py
-│   │   ├── cypher_agent.py
-│   │   ├── reflection_agents.py
-│   │   └── vector_agent.py
-│   ├── chains/
-│   │   ├── __init__.py
-│   │   ├── guardrails.py
-│   │   ├── review.py
-│   │   └── synthesizer.py
-│   ├── config/
-│   │   ├── __init__.py
-│   │   └── settings.py
-│   ├── graph/
-│   │   ├── __init__.py
-│   │   ├── state.py
-│   │   └── workflow.py
-│   ├── log/
-│   │   └── (a log file will be created here)
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── logging_config.py
-│   └── run.py
-└── .env
-
-
-```
-
+│   ├── agents/          # Logika spesifik setiap agen (Vector, Cypher, SPARQL)
+│   ├── config/          # Pengaturan LLM (Gemini) dan Database
+│   ├── graph/           # Definisi State dan Workflow LangGraph
+│   └── run.py           # Entry point aplikasi
+├── browser_mcp.json     # Konfigurasi server RDF Explorer
+└── requirements.txt     # Daftar library dengan versi stabil
