@@ -53,9 +53,8 @@ JSON
   }
 }
 ```
-🛡️ Solusi Teknis (Technical Highlights)
+🛡️ Solusi Teknis (Technical Highlights)Penanganan Error cannot pickle '_asyncio.Future'
 
-Penanganan Error cannot pickle '_asyncio.Future'
 Sistem ini menggunakan teknik isolasi subprocess pada _mcp_runner.py untuk menjalankan Agen MCP. Hal ini dilakukan karena LangGraph melakukan checkpointing (deepcopy) pada state agen, yang secara bawaan gagal jika agen memegang koneksi gRPC asinkron aktif. Dengan menjalankan MCP di subprocess terpisah dan berkomunikasi via stdin/stdout, stabilitas sistem terjaga 100%.
 
 Mekanisme Generalisasi Pertanyaan
