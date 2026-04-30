@@ -27,25 +27,29 @@ Untuk menghindari error serialization (cannot pickle), pastikan kamu menginstal 
 
 Bash
 # Clone repository
+```
 git clone <url-repository-kamu>
 cd multi-agents-cykg-rag
-
+```
 # Buat lingkungan virtual
 uv venv
 source .venv/Scripts/activate  # Untuk Windows: .venv\Scripts\activate
 
 # Install library dengan versi yang dikunci (Krusial)
+```
 uv pip install pydantic==1.10.12 langchain==0.1.20 langgraph==0.0.53 langchain-google-genai==1.0.3 langchain-neo4j==0.1.1 langchain-huggingface==0.0.3 python-dotenv
+```
 3. Konfigurasi Environment (.env)
 Buat file .env di folder utama dan isi sebagai berikut:
 
+```
 Cuplikan kode
 GOOGLE_API_KEY=AIzaSy...
 NEO4J_AURA=neo4j+ssc://<instance-id>.databases.neo4j.io
 NEO4J_AURA_USERNAME=neo4j
 NEO4J_AURA_PASSWORD=<password-aura-kamu>
 NEO4J_AURA_DATABASE=neo4j
-
+```
 # Konfigurasi LangChain (Opsional)
 LANGCHAIN_TRACING_V2=false
 LANGCHAIN_PROJECT=AgCyRAG-Research
@@ -63,8 +67,9 @@ Pastikan data muncul di tab Explore pada konsol Aura.
 🖥️ Menjalankan Aplikasi
 Gunakan perintah berikut untuk mengajukan pertanyaan analisis:
 
-Bash
+```bash
 uv run -m src.run -- "Identifikasi aktivitas mencurigakan oleh user Daryl dan mitigasinya"
+```
 ❓ Troubleshooting (Penting!)
 Error AuthError: Unauthorized: Pastikan NEO4J_AURA_USERNAME adalah neo4j (bukan ID instance).
 
