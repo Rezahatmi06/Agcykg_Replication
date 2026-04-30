@@ -75,7 +75,7 @@ Error cannot pickle: Pastikan kamu sudah melakukan downgrade Pydantic ke versi 1
 Masalah Koneksi: Jika menggunakan jaringan kampus/kantor dan gagal konek, gunakan Hotspot Seluler dan gunakan protokol neo4j+ssc:// di file .env.
 
 📂 Struktur Proyek
-
+```
 ├── src/
 │   ├── agents/          # Logika spesifik setiap agen (Vector, Cypher, SPARQL)
 │   ├── config/          # Pengaturan LLM (Gemini) dan Database
@@ -83,3 +83,4 @@ Masalah Koneksi: Jika menggunakan jaringan kampus/kantor dan gagal konek, gunaka
 │   └── run.py           # Entry point aplikasi
 ├── browser_mcp.json     # Konfigurasi server RDF Explorer
 └── requirements.txt     # Daftar library dengan versi stabil
+```
